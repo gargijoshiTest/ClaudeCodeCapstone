@@ -6,5 +6,8 @@
   "scripts": {
     "serve": "npx http-server . -p 3000 -c-1 --header \"Content-Security-Policy: default-src 'self'\"",
     "test": "node ci/test-colorUtils.js && node ci/test-filter.js"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0"
   }
 }
