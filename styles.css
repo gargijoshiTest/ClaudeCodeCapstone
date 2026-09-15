@@ -1,0 +1,190 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --warning-bg: #fff3cd;
+  --warning-text: #664d03;
+  --warning-border: #ffca2c;
+  --bg: #f8f9fa;
+  --surface: #ffffff;
+  --border: #dee2e6;
+  --text: #212529;
+  --text-muted: #6c757d;
+  --radius: 8px;
+  --shadow: 0 2px 8px rgba(0,0,0,.12);
+}
+
+body {
+  font-family: system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+}
+
+#offline-banner {
+  background: var(--warning-bg);
+  color: var(--warning-text);
+  border-bottom: 2px solid var(--warning-border);
+  padding: 10px 16px;
+  text-align: center;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+header {
+  padding: 20px 24px 0;
+}
+header h1 { font-size: 1.5rem; }
+
+.controls {
+  display: flex;
+  gap: 12px;
+  padding: 16px 24px;
+  flex-wrap: wrap;
+}
+.controls input,
+.controls select {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 1rem;
+  background: var(--surface);
+  flex: 1;
+  min-width: 160px;
+}
+.controls input:focus,
+.controls select:focus {
+  outline: 2px solid #4169E1;
+  outline-offset: 2px;
+}
+
+#loading-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 48px;
+}
+#loading-state .spinner {
+  width: 40px; height: 40px;
+  border: 4px solid var(--border);
+  border-top-color: #4169E1;
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  #loading-state .spinner { animation: none; opacity: 0.5; }
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+#swatch-list {
+  display: flex;
+  flex-direction: row;
+  overflow-x: auto;
+  gap: 12px;
+  padding: 0 24px 24px;
+  scroll-snap-type: x proximity;
+}
+#swatch-list:focus { outline: none; }
+
+.swatch {
+  flex: 0 0 auto;
+  width: 110px;
+  height: 110px;
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 8px;
+  cursor: pointer;
+  scroll-snap-align: start;
+  border: 2px solid transparent;
+  transition: transform .1s, box-shadow .1s;
+}
+.swatch:hover,
+.swatch:focus {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+  outline: 2px solid #4169E1;
+  outline-offset: 2px;
+}
+.swatch-name,
+.swatch-hex {
+  font-size: .7rem;
+  font-weight: 600;
+  line-height: 1.3;
+  word-break: break-word;
+}
+
+#empty-state {
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 1.1rem;
+}
+
+dialog#color-modal {
+  border: none;
+  border-radius: var(--radius);
+  padding: 0;
+  box-shadow: 0 8px 32px rgba(0,0,0,.25);
+  max-width: 360px;
+  width: 90vw;
+}
+dialog#color-modal::backdrop {
+  background: rgba(0,0,0,.5);
+}
+.modal-inner {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.modal-swatch-preview {
+  width: 100%;
+  height: 80px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+.modal-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin: 0;
+}
+.modal-fields {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+  font-size: .9rem;
+}
+.modal-fields dt { color: var(--text-muted); font-weight: 600; }
+.modal-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+.btn {
+  padding: 8px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  cursor: pointer;
+  font-size: .9rem;
+}
+.btn:hover { background: var(--bg); }
+.btn:focus { outline: 2px solid #4169E1; outline-offset: 2px; }
+.btn-primary { background: #4169E1; color: #fff; border-color: #4169E1; }
+.btn-primary:hover { background: #3558c7; }
+
+@media (max-width: 600px) {
+  .controls { flex-direction: column; }
+  .controls input, .controls select { min-width: unset; width: 100%; }
+}

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Color Palette Explorer</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div id="offline-banner" role="alert" hidden>
+    ⚠ Offline mode — showing built-in color dataset.
+  </div>
+
+  <header>
+    <h1>Color Palette Explorer</h1>
+  </header>
+
+  <section class="controls" aria-label="Filter controls">
+    <input
+      id="search"
+      type="search"
+      placeholder="Search colors…"
+      aria-label="Search colors by name"
+      autocomplete="off"
+      disabled
+    >
+    <select id="family-filter" aria-label="Filter by color family" disabled>
+      <option value="All">All families</option>
+    </select>
+  </section>
+
+  <div id="loading-state" aria-label="Loading colors">
+    <div class="spinner" role="status"></div>
+  </div>
+
+  <div
+    id="swatch-list"
+    role="listbox"
+    aria-label="Color swatches"
+    aria-multiselectable="false"
+    tabindex="0"
+  ></div>
+
+  <div id="empty-state" hidden>No colors match your filter.</div>
+
+  <div id="aria-announcer" aria-live="polite" aria-atomic="true" class="sr-only"></div>
+
+  <dialog id="color-modal" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-inner">
+      <div class="modal-swatch-preview" id="modal-preview" aria-hidden="true"></div>
+      <h2 class="modal-title" id="modal-title"></h2>
+      <dl class="modal-fields">
+        <dt>HEX</dt>  <dd id="modal-hex"></dd>
+        <dt>RGB</dt>  <dd id="modal-rgb"></dd>
+        <dt>HSL</dt>  <dd id="modal-hsl"></dd>
+        <dt>vs White</dt> <dd id="modal-contrast-white"></dd>
+        <dt>vs Black</dt> <dd id="modal-contrast-black"></dd>
+      </dl>
+      <div class="modal-actions">
+        <button id="btn-copy" class="btn btn-primary">Copy HEX</button>
+        <button id="btn-close-modal" class="btn">Close</button>
+      </div>
+    </div>
+  </dialog>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
