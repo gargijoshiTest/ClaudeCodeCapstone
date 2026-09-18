@@ -9,7 +9,7 @@
  */
 
 import assert from 'node:assert/strict';
-import { buildRgbString, buildHslString, evalWcagAA } from '../lib/playground.js';
+import { buildRgbString, buildHslString, evalWcagAA, debounce } from '../lib/playground.js';
 import { getContrastRatio } from '../lib/colorUtils.js';
 
 const { equal, ok } = assert;
@@ -32,6 +32,13 @@ equal(
   buildRgbString('#000000'),
   'rgb(0, 0, 0)',
   'buildRgbString: black #000000 → rgb(0, 0, 0)'
+);
+
+// R-02: lowercase hex input must produce the same result (case-insensitive handling)
+equal(
+  buildRgbString('#dc143c'),
+  'rgb(220, 20, 60)',
+  'buildRgbString: lowercase hex #dc143c → rgb(220, 20, 60)'
 );
 
 // ---- buildHslString: hex-to-HSL conversion ----
@@ -74,10 +81,12 @@ ok(
 );
 
 // Crimson on white — verify evalWcagAA correctly reports pass/fail
+// Crimson (#DC143C) on white is known to produce ~5.1:1, passing WCAG AA.
+// Assert a meaningful range to detect calculation regressions (R-06).
 const crimsonOnWhite = getContrastRatio('#DC143C', '#FFFFFF');
 ok(
-  crimsonOnWhite > 0,
-  `getContrastRatio('#DC143C', '#FFFFFF') returns positive value: ${crimsonOnWhite}`
+  crimsonOnWhite >= 4.5 && crimsonOnWhite <= 7,
+  `getContrastRatio('#DC143C', '#FFFFFF') is in range [4.5, 7]: got ${crimsonOnWhite}`
 );
 
 // Black on white always passes WCAG AA
@@ -97,5 +106,25 @@ equal(
 // Royal Blue (#4169E1) on white — test a known color from dataset
 const royalBlueRatio = getContrastRatio('#4169E1', '#FFFFFF');
 ok(royalBlueRatio > 0, `Royal Blue on white contrast ratio is positive: ${royalBlueRatio}`);
+
+// ---- debounce: trailing-edge delay ----
+
+await new Promise((resolve, reject) => {
+  let callCount = 0;
+  const fn = debounce(() => { callCount++; }, 50);
+
+  // Fire three times in rapid succession
+  fn(); fn(); fn();
+
+  // After delay, callback should have fired exactly once
+  setTimeout(() => {
+    try {
+      assert.equal(callCount, 1, 'debounce: rapid calls collapse to one invocation');
+      resolve();
+    } catch (err) {
+      reject(err);
+    }
+  }, 100);
+});
 
 console.log('playground: all assertions passed');

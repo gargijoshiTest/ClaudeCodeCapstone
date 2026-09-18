@@ -29,7 +29,7 @@ This extension approach is chosen because:
 |---|---|---|
 | `lib/colorUtils.js` | **Reused unchanged** | `hexToRgb`, `rgbToHsl`, `getContrastRatio` cover FR-06, FR-07, FR-08 |
 | `lib/filter.js` | **Reused unchanged** | `filterColors(colors, query, 'All')` drives combobox inline search (FR-03) |
-| `styles.css` | **Extended — additive only** | New playground-specific classes appended at end; all TES-2 classes unchanged |
+| `styles.css` | **Unchanged** | TES-3 constraint: `styles.css` is a TES-2 file and must not be modified; playground classes moved to `playground.css` (see AD-05 note below) |
 | `colors.v1.json` | **Reused unchanged** | Same dataset (DEP-01) |
 | `app.js` | **Unchanged** | TES-2 orchestrator; not imported by playground |
 | `index.html` | **Unchanged** | TES-2 page; not modified (per task constraint) |
@@ -38,8 +38,9 @@ This extension approach is chosen because:
 | `.github/workflows/ci.yml` | **Unchanged** | `npm test` already runs all tests; no workflow edits needed |
 | `text-color-playground.html` | **NEW** | TES-3 page shell |
 | `lib/playground.js` | **NEW** | TES-3 ES module orchestrator |
+| `playground.css` | **NEW** | TES-3 playground-specific styles (see AD-05 note) |
 | `ci/test-playground.js` | **NEW** | TES-3 smoke tests (FR-15) |
-| `package.json` | **Modified** | `test` script extended: `... && node ci/test-playground.js` |
+| `package.json` | **Modified** | `test` script extended: `... && node ci/test-playground.js`; `@playwright/test` pinned to exact version |
 
 ---
 
@@ -118,7 +119,7 @@ No new technologies are introduced. Every choice traces directly to a NFR or exi
 | Background color control | `<input type="color">` | Native Chrome color picker; resolves OQ-02; zero dependency, fully keyboard-accessible | Second dataset dropdown — too heavy; free-form hex text field — requires validation; combination — over-engineered for a prototype |
 | Color math | `lib/colorUtils.js` (existing) | Direct reuse; all required functions already present and CI-tested | chroma.js — unnecessary dependency |
 | Sample text editing | `<textarea>` + `input` event → `textContent` | Safe XSS mitigation (EC-03); native keyboard accessible per NFR-01 | `contenteditable <div>` — harder to sanitise |
-| Styling | `styles.css` extended | Reuses all design tokens (`--bg`, `--surface`, `--border`, `--radius`) without duplication | Separate `playground.css` — would require duplicating `:root` token definitions |
+| Styling | `playground.css` linked after `styles.css` | Reuses all design tokens (`--bg`, `--surface`, `--border`, `--radius`) without duplication; `styles.css` is unchanged per TES-3 constraint | Appending to `styles.css` — preferred in AD-05 original plan, but `styles.css` is a TES-2 file that must not be modified |
 | CI / test runner | GitHub Actions + plain `node` (existing) | No change; new smoke test is also a pure-function test, no DOM runner needed | — |
 
 ---
@@ -222,7 +223,7 @@ sequenceDiagram
 | AD-02 | Default color on load = first entry in normalised dataset | Deterministic; always a valid color; avoids an empty/unselected state edge case | OQ-01 |
 | AD-03 | Sample text editing = `<textarea>` bound via `input` event to preview `textContent` | `textContent` (not `innerHTML`) eliminates XSS risk for EC-03; `<textarea>` is natively accessible | EC-03, NFR-01 |
 | AD-04 | Combobox = custom ARIA combobox, not `<select>` or `<datalist>` | Only approach that satisfies both FR-03 (inline search) and NFR-01 (keyboard operability) | FR-03, NFR-01 |
-| AD-05 | Playground styles appended to `styles.css` | Reuses `:root` design tokens with no duplication; single stylesheet reference per page | NFR-06 |
+| AD-05 | Playground styles in a dedicated `playground.css`, linked after `styles.css` | The original plan was to append to `styles.css`, but the TES-3 implementation constraint forbids modifying TES-2 files. A separate `playground.css` achieves the same outcome: `:root` tokens are declared only once in `styles.css` (loaded first) and consumed via `var()` in `playground.css` — no duplication occurs. The cost is a second `<link>` tag on `text-color-playground.html` only. | NFR-06 |
 | AD-06 | WCAG AA threshold only (4.5:1); AAA out of scope | Matches ASM-03 explicitly | OQ-05, ASM-03 |
 | AD-07 | Offline banner is non-dismissible | Matches ASM-04 | OQ-03, ASM-04 |
 | AD-08 | `playground.js` module state: `allColors[]`, `selectedColor` (object\|null), `currentBgHex` (string, `'#FFFFFF'`) | Explicit state shape prevents implementation variance; consistent with TES-2 module-scope state pattern | GAP-01 |
