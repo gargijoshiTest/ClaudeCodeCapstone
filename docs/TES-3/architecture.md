@@ -98,7 +98,7 @@ graph TD
 | Component | Technology | Responsibility |
 |---|---|---|
 | `text-color-playground.html` | HTML5 | Page shell: ARIA combobox markup, `<textarea>` for editable sample text, live preview `<div>`, color info `<dl>` panel, `<input type="color">` for background, Copy HEX `<button>`, `aria-live` region, offline banner |
-| `lib/playground.js` | Vanilla JS ES module (ES2020) | Orchestrator: loads and normalises color data (fetch + fallback), populates ARIA combobox, applies selected color as `style.color` on preview text, updates info panel (Name / HEX / RGB / HSL), calculates contrast ratio, evaluates WCAG AA pass/fail, handles background color change, Copy HEX, ARIA live announcements |
+| `lib/playground.js` | Vanilla JS ES module (ES2020) | Orchestrator: loads and normalises color data (fetch + fallback), populates ARIA combobox, applies selected color as `style.color` on preview text, updates info panel (Name / HEX / RGB / HSL via `textContent`), calculates contrast ratio, evaluates WCAG AA pass/fail, handles background color change, Copy HEX (with `.catch(() => {})`), ARIA live announcements. **Module-level state**: `allColors` (array, normalised dataset), `selectedColor` (object\|null, current selection), `currentBgHex` (string, default `'#FFFFFF'`). **Constraint**: no `document.*` or `window.*` calls at module top level — all DOM access is deferred to function bodies so that Node.js can import this module in CI without a DOM environment (DD-10). |
 | `lib/colorUtils.js` | Pure vanilla JS (existing) | `hexToRgb` and `rgbToHsl` for info panel values; `getContrastRatio` for WCAG contrast calculation |
 | `lib/filter.js` | Pure vanilla JS (existing) | `filterColors(allColors, query, 'All')` for combobox inline search as user types |
 | `styles.css` (extended) | CSS3 (additive) | New classes: `.playground-layout`, `.preview-area`, `.info-panel`, `.contrast-badge`, `.contrast-pass`, `.contrast-fail`, `.combobox-wrapper`, `.combobox-listbox`, `.combobox-option` |
@@ -138,10 +138,10 @@ sequenceDiagram
     User->>HTML: Opens text-color-playground.html
     HTML->>PG: DOMContentLoaded → initPlayground()
     PG->>JSON: fetch('colors.v1.json')
-    alt Fetch succeeds
+    alt Fetch succeeds AND res.ok is true
         JSON-->>PG: Raw color array
         PG-->>PG: normalise — drop entries missing name/hex/family
-    else Fetch fails (network / file://)
+    else Fetch fails (network / file://) OR res.ok is false (4xx/5xx)
         PG-->>PG: Load embedded FALLBACK_COLORS
         PG-->>HTML: Show non-dismissible offline banner
     end
@@ -152,9 +152,10 @@ sequenceDiagram
     PG-->>HTML: Render initial state: preview text color, info panel, contrast badge
 
     User->>HTML: Types in combobox search input
-    HTML->>Filter: filterColors(allColors, typedQuery, 'All')
-    Filter-->>HTML: Filtered color list
-    HTML-->>User: Update combobox listbox options (keyboard nav ready)
+    HTML->>PG: input event (debounced 150ms trailing edge)
+    PG->>Filter: filterColors(allColors, query, 'All')
+    Filter-->>PG: Filtered color list
+    PG-->>HTML: Update combobox listbox options (≤50 shown, keyboard nav ready)
 
     User->>HTML: Selects color (click or Enter on listbox option)
     HTML->>PG: applyColor(selectedColor)
@@ -181,22 +182,22 @@ sequenceDiagram
         CB-->>PG: Promise resolved
         PG-->>HTML: aria-live: "HEX #DC143C copied to clipboard"
         PG-->>HTML: Visual confirmation: button label briefly changes to "Copied!"
-    else Clipboard API unavailable (EC-02)
-        PG-->>HTML: Silent fail — no crash, no announcement
+    else Clipboard API unavailable or writeText() rejects (EC-02)
+        PG-->>HTML: Silent fail — .catch(() => {}) swallows error; no crash, no announcement
     end
 ```
 
 ### Flow Description
 
 1. User opens `text-color-playground.html` via `npm run serve`. `DOMContentLoaded` fires and `initPlayground()` runs.
-2. `lib/playground.js` fetches `colors.v1.json`. On success, entries missing `name`/`hex`/`family` are dropped (same normalisation as TES-2). On failure, embedded `FALLBACK_COLORS` is used and the offline banner is shown.
+2. `lib/playground.js` fetches `colors.v1.json`. If the response succeeds (`res.ok === true`), entries missing `name`/`hex`/`family` are dropped (same normalisation as TES-2). On network failure, `file://` protocol, OR any HTTP non-2xx status, `if (!res.ok) throw` is triggered and embedded `FALLBACK_COLORS` is used; the offline banner is shown.
 3. Combobox is populated with all color names. The first color in the normalised array is selected by default (AD-02).
 4. Initial state renders: preview text is colored with the default selection; info panel shows Name, HEX, RGB, HSL; contrast ratio against white (`#FFFFFF`) is displayed with WCAG AA status.
-5. User types in the combobox search input → `filterColors(allColors, query, 'All')` from `lib/filter.js` → combobox listbox repopulated with matching options.
+5. User types in the combobox search input → 150ms trailing-edge debounce fires → `playground.js` calls `filterColors(allColors, query, 'All')` from `lib/filter.js` → combobox listbox repopulated with up to 50 matching options (best-match cap).
 6. User selects a color → `applyColor()` sets `style.color` on the preview `<div>`, updates the info panel and contrast badge, announces via `aria-live`.
 7. User edits the `<textarea>` → the preview `<div>`'s `textContent` is updated via an `input` event listener (safe XSS: `textContent` never `innerHTML`).
 8. User changes the background color via `<input type="color">` → `updateContrast()` recalculates ratio with `getContrastRatio` and updates badge and WCAG AA indicator without page reload.
-9. User clicks Copy HEX → `navigator.clipboard.writeText()`. On success, aria-live announces confirmation and button label briefly changes. On failure, silently swallowed (EC-02).
+9. User clicks Copy HEX → `navigator.clipboard.writeText()` with `.catch(() => {})`. On success, aria-live announces confirmation and button label briefly changes to "Copied!". On failure (API absent OR permission-denied rejection), silently swallowed with no crash or announcement (EC-02).
 
 ---
 
@@ -204,12 +205,12 @@ sequenceDiagram
 
 | NFR | Architectural Decision |
 |---|---|
-| NFR-01 Accessibility | Custom ARIA combobox (`role="combobox"`, `aria-expanded`, `aria-autocomplete="list"`, `aria-activedescendant`; listbox uses `role="listbox"` + `role="option"`, keyboard: ArrowUp/Down to navigate, Enter to select, Escape to close); `<textarea>` is natively keyboard-accessible; `<input type="color">` is natively keyboard-accessible; single `aria-live="polite"` region announces color selection, contrast result, and clipboard confirmation; all controls carry `aria-label` attributes |
+| NFR-01 Accessibility | Custom ARIA combobox (`role="combobox"`, `aria-expanded`, `aria-autocomplete="list"`, `aria-activedescendant`, **`aria-controls="<listbox-id>"`** — required to link input to listbox for screen readers; listbox uses `role="listbox"` + `role="option"`, keyboard: ArrowUp/Down to navigate, Enter to select, Escape to close); `<textarea>` is natively keyboard-accessible; `<input type="color">` is natively keyboard-accessible; single `aria-live="polite"` region announces color selection, contrast result, and clipboard confirmation; all controls carry `aria-label` attributes. **Reduced-motion**: all CSS transitions added for TES-3 playground classes (e.g., "Copied!" button feedback, contrast badge state change) must be scoped inside `@media (prefers-reduced-motion: no-preference)` blocks, consistent with existing TES-2 `@media (prefers-reduced-motion: reduce)` rules in `styles.css`. |
 | NFR-02 Responsiveness | CSS Grid two-column layout on desktop (combobox + controls left; preview + info right); single-column stack on `max-width: 600px` (same breakpoint as TES-2); preview area maintains minimum height at all viewport sizes |
-| NFR-03 Security | Sample text injected into preview via `textContent` (never `innerHTML`) — satisfies EC-03; selected HEX value applied as `style.color` (CSS property assignment, not DOM injection); background hex from `<input type="color">` is a browser-validated color value |
-| NFR-04 Performance | All state updates are synchronous event handlers with no debounce needed (single selection change, not bulk DOM rendering); combobox list renders at most the full dataset size (~hundreds of items) — well within instantaneous threshold; no `requestAnimationFrame` chunking needed |
+| NFR-03 Security | Sample text injected into preview via `textContent` (never `innerHTML`) — satisfies EC-03; selected HEX value applied as `style.color` (CSS property assignment, not DOM injection); background hex from `<input type="color">` is a browser-validated color value; **Color Name, HEX, RGB, and HSL values from the info panel `<dl>` are also injected exclusively via `textContent` (never `innerHTML`)** — protects against XSS in the event of malicious content in `colors.v1.json` |
+| NFR-04 Performance | Color selection, background color change, and sample text edits are synchronous single-DOM-node updates with no debounce needed. Combobox input is filtered via **150ms trailing-edge debounce** (same constant as TES-2's search input) to prevent per-keystroke full-dataset DOM repopulation; the rendered listbox is **capped at 50 options** (best-match first), preventing layout work proportional to the full dataset size; no `requestAnimationFrame` chunking needed for the 50-item cap. |
 | NFR-05 Compatibility | Chrome latest only (same as TES-2); uses `<input type="color">`, Clipboard API, ES2020 — all native in Chrome |
-| NFR-06 Maintainability | `lib/playground.js` follows the same pure-module pattern as TES-2 (named exports, no global state leakage); `ci/test-playground.js` tests pure functions independently of DOM; code reviewed before merge per process |
+| NFR-06 Maintainability | `lib/playground.js` follows the same pure-module pattern as TES-2 (named exports, no global state leakage); `ci/test-playground.js` tests pure functions independently of DOM; code reviewed before merge per process. **DOM-deferral constraint (DD-10)**: `playground.js` must have zero `document.*` or `window.*` calls at module top level — all DOM access is inside function bodies — so that Node.js can `import` the module in `ci/test-playground.js` without a DOM environment. |
 
 ---
 
@@ -224,6 +225,9 @@ sequenceDiagram
 | AD-05 | Playground styles appended to `styles.css` | Reuses `:root` design tokens with no duplication; single stylesheet reference per page | NFR-06 |
 | AD-06 | WCAG AA threshold only (4.5:1); AAA out of scope | Matches ASM-03 explicitly | OQ-05, ASM-03 |
 | AD-07 | Offline banner is non-dismissible | Matches ASM-04 | OQ-03, ASM-04 |
+| AD-08 | `playground.js` module state: `allColors[]`, `selectedColor` (object\|null), `currentBgHex` (string, `'#FFFFFF'`) | Explicit state shape prevents implementation variance; consistent with TES-2 module-scope state pattern | GAP-01 |
+| AD-09 | Combobox input debounced at 150ms trailing edge; listbox capped at 50 rendered options | Prevents per-keystroke full-dataset DOM repopulation; 50-option cap follows TES-2 chunk-size precedent; debounce constant matches TES-2 `DEBOUNCE_MS` | GAP-03 |
+| AD-10 | `playground.js` defers all DOM access to function bodies (no top-level `document.*` calls) | Allows Node.js to import `playground.js` in `ci/test-playground.js` without crashing on missing DOM environment | RISK-03 |
 
 ---
 
@@ -253,3 +257,12 @@ sequenceDiagram
 | Date | Change | Trigger |
 |---|---|---|
 | 2026-09-18 | Initial architecture for TES-3 Text Color Playground as extension of TES-2 | JIRA TES-3 requirements |
+| 2026-09-18 | Corrected Section 6 sequence diagram: combobox input event routed through PG before Filter | Design review finding RISK-01 |
+| 2026-09-18 | Extended NFR-03 Security: info panel `<dl>` values explicitly specified as `textContent`-only | Design review finding RISK-02 |
+| 2026-09-18 | Added DOM-deferral constraint to Section 4 (playground.js) and NFR-06; added AD-10 | Design review finding RISK-03 |
+| 2026-09-18 | Added `response.ok` check to Section 6 fetch flow (sequence diagram alt condition + description step 2) | Design review finding RISK-04 |
+| 2026-09-18 | Added module-level state variable specification to Section 4 (playground.js); added AD-08 | Design review finding GAP-01 |
+| 2026-09-18 | Added `aria-controls` to NFR-01 ARIA combobox attribute list | Design review finding GAP-02 |
+| 2026-09-18 | Replaced "no debounce needed" with 150ms debounce + 50-option cap in NFR-04; updated Section 6 flow; added AD-09 | Design review finding GAP-03 |
+| 2026-09-18 | Specified `.catch(() => {})` for clipboard in Section 6 EC-02 branch, Section 4, and flow description step 9 | Design review finding GAP-04 |
+| 2026-09-18 | Added reduced-motion requirement for TES-3 CSS transitions in NFR-01 | Design review finding GAP-05 |
