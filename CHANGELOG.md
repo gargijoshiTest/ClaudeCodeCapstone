@@ -5,6 +5,37 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [Unreleased] — 2026-09-21
+
+### Added
+- `text-color-playground.html` — Text Color Playground page: ARIA combobox, sample text textarea, preview div, color info panel, contrast badge, background color picker, Copy HEX button (TES-3, TASK-04)
+- `lib/playground.js` — Text Color Playground ES module orchestrator: applyColor, updateInfoPanel, updateContrast, evalWcagAA, copyHex, populateCombobox, debounce, offline fallback (TES-3, TASK-02)
+- `playground.css` — Playground-specific styles: responsive two-column grid, combobox widget, contrast badge; all transitions scoped in `@media (prefers-reduced-motion: no-preference)` (TASK-01, GAP-05)
+- `ci/test-playground.js` — 19 unit assertions: buildRgbString, buildHslString, evalWcagAA, getContrastRatio, debounce (TES-3, TASK-03)
+- `tests/e2e/playground.spec.js` — 39 Playwright E2E tests covering AC-01..11, NFR-01, NFR-02, EC-03, EC-04 (TES-3)
+- `docs/TES-3/requirements.md` — FR-01..16, NFR-01..06, AC-01..11, EC-01..04, OQ-01..05 from JIRA TES-3
+- `docs/TES-3/architecture.md` — Zero-dependency SPA extension design; Mermaid diagrams; AD-01..10 decisions
+- `docs/TES-3/design-review.md` — 9 findings accepted (RISK-01..04, GAP-01..05); DD-08..10 agreed
+- `docs/TES-3/impl-plan.md` — 5-task Wave 1–5 plan; all tasks complete
+- `docs/TES-3/code-review.md` — Verdict APPROVED WITH CONDITIONS; 6 fixes applied; 3 NITs skipped (R-07, R-08, R-09)
+- `docs/TES-3/qa-report.md` — QA verdict PASS; 64 total tests pass; all 11 ACs covered
+
+### Changed
+- `package.json` — Extended `test` script to include `node ci/test-playground.js`; pinned `@playwright/test` to exact version `1.63.0` (R-04)
+
+### Fixed
+- `lib/playground.js` — Extracted `setField(id, value)` helper in `updateInfoPanel` to eliminate four repetitive null-checked assignments (R-01)
+- `lib/playground.js` — Extended `updateInfoPanel` guard to check `typeof color.name` in addition to `color.hex` (R-05)
+- `ci/test-playground.js` — Added lowercase hex test for `buildRgbString('#dc143c')` (R-02)
+- `ci/test-playground.js` — Tightened Crimson contrast assertion from `> 0` to `>= 4.5 && <= 7` to detect formula regressions (R-06)
+
+### Testing
+- Added `tests/e2e/playground.spec.js` — 39 Playwright E2E tests covering all TES-3 acceptance criteria
+- Added `ci/test-playground.js` — 19 unit assertions for pure playground functions
+- Total: 61 Playwright tests pass (39 TES-3 + 22 TES-2 regression); all 3 unit test files pass
+
+---
+
 ## [Unreleased] — 2026-09-15
 
 ### Added

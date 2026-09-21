@@ -176,8 +176,8 @@ TASK-05: Update package.json test script
 
 ## Status
 
-- [ ] TASK-01: Create playground.css
-- [ ] TASK-02: Create lib/playground.js
-- [ ] TASK-03: Create ci/test-playground.js
-- [ ] TASK-04: Create text-color-playground.html
-- [ ] TASK-05: Update package.json test script
+- [x] TASK-01: Create playground.css
+- [x] TASK-02: Create lib/playground.js
+- [x] TASK-03: Create ci/test-playground.js
+- [x] TASK-04: Create text-color-playground.html
+- [x] TASK-05: Update package.json test script
