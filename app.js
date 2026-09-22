@@ -28,6 +28,10 @@ export function debounce(fn, ms) {
 }
 
 function normalise(raw) {
+  if (!Array.isArray(raw)) {
+    console.warn('Color data is not an array, using fallback.');
+    return [];
+  }
   return raw.filter(c => {
     const ok = c && typeof c.name === 'string' && typeof c.hex === 'string' && typeof c.family === 'string';
     if (!ok) console.warn('Dropping malformed color entry:', c);
@@ -97,7 +101,7 @@ export function renderChunk(filtered, generation, offset) {
 
     btn.addEventListener('click', () => openModal(color, btn));
     btn.addEventListener('keydown', e => {
-      if (e.key === 'Enter') openModal(color, btn);
+      if (e.key === 'Enter') { e.preventDefault(); openModal(color, btn); }
     });
 
     list.appendChild(btn);

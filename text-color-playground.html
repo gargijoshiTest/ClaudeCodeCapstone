@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Text Color Playground</title>
+  <!-- styles.css: shared design tokens (:root), .btn, .sr-only, #offline-banner base -->
+  <link rel="stylesheet" href="styles.css">
+  <!-- playground.css: TES-3 playground-specific layout and widget classes -->
+  <link rel="stylesheet" href="playground.css">
+</head>
+<body>
+
+  <!--
+    Offline banner (FR-13, AC-09, ASM-04):
+    Hidden by default. playground.js sets hidden=false when fallback dataset is used.
+    Non-dismissible per ASM-04 / AD-07.
+  -->
+  <div id="pg-offline-banner" role="alert" hidden>
+    &#9888; Offline mode &#8212; showing built-in color dataset.
+  </div>
+
+  <!-- Page header with back-navigation link -->
+  <header class="pg-header">
+    <h1>Text Color Playground</h1>
+    <a href="index.html" class="pg-nav-link" aria-label="Back to Color Palette Explorer">
+      &#8592; Color Palette Explorer
+    </a>
+  </header>
+
+  <!--
+    ARIA live region (NFR-01, FR-12):
+    Announces: color selection, contrast result, clipboard copy confirmation.
+    aria-atomic="true" so the full message is read out on update.
+  -->
+  <div
+    id="pg-aria-live"
+    aria-live="polite"
+    aria-atomic="true"
+    class="sr-only"
+  ></div>
+
+  <!-- Two-column responsive grid layout (NFR-02, AD-05) -->
+  <main class="playground-layout" aria-label="Text Color Playground">
+
+    <!-- ============================
+         LEFT COLUMN — Controls
+         ============================ -->
+    <div class="playground-column">
+
+      <!-- Color selection combobox (FR-02, FR-03, NFR-01, AD-04, GAP-02) -->
+      <section aria-labelledby="pg-color-select-label">
+        <p id="pg-color-select-label" class="pg-section-label">Select a color</p>
+
+        <!--
+          ARIA combobox pattern (ARIA 1.1):
+            role="combobox"             — marks this as a combo widget
+            aria-expanded               — toggled by playground.js
+            aria-autocomplete="list"    — filters the listbox as user types
+            aria-controls="pg-listbox"  — links input to listbox (GAP-02)
+            aria-activedescendant       — set by playground.js on keyboard nav
+        -->
+        <div class="combobox-wrapper">
+          <input
+            id="pg-combobox-input"
+            type="text"
+            role="combobox"
+            aria-expanded="false"
+            aria-autocomplete="list"
+            aria-controls="pg-listbox"
+            aria-haspopup="listbox"
+            aria-label="Select a color — type to search"
+            autocomplete="off"
+            placeholder="Type to search colors…"
+          >
+          <ul
+            id="pg-listbox"
+            role="listbox"
+            aria-label="Color options"
+            class="combobox-listbox"
+            hidden
+          >
+            <!-- Options are populated by playground.js — textContent only (NFR-03) -->
+          </ul>
+        </div>
+      </section>
+
+      <!-- Sample text editor (FR-09, AC-06, AD-03, NFR-03) -->
+      <section aria-labelledby="pg-sample-label">
+        <label id="pg-sample-label" class="pg-label" for="pg-sample-text">
+          <span class="pg-section-label">Sample text</span>
+          <textarea
+            id="pg-sample-text"
+            class="pg-textarea"
+            aria-label="Sample text — edit to preview your text in the selected color"
+            rows="3"
+          >The quick brown fox jumps over the lazy dog.</textarea>
+          <!-- ASM-02: default pangram -->
+        </label>
+      </section>
+
+      <!-- Background color picker (FR-10, AC-07, AD-01) -->
+      <section aria-labelledby="pg-bg-label">
+        <p id="pg-bg-label" class="pg-section-label">Preview background</p>
+        <div class="pg-bg-row">
+          <label class="pg-label" for="pg-bg-color">
+            Background color
+          </label>
+          <input
+            id="pg-bg-color"
+            type="color"
+            class="pg-color-input"
+            value="#FFFFFF"
+            aria-label="Preview background color — changing this recalculates contrast"
+          >
+        </div>
+      </section>
+
+      <!-- Copy HEX button (FR-11, FR-12, AC-08, EC-02) -->
+      <section aria-labelledby="pg-copy-label">
+        <p id="pg-copy-label" class="pg-section-label">Export</p>
+        <button
+          id="pg-btn-copy"
+          class="btn btn-primary btn-copy-feedback"
+          type="button"
+          aria-label="Copy selected color HEX value to clipboard"
+        >
+          Copy HEX
+        </button>
+      </section>
+
+    </div><!-- /LEFT COLUMN -->
+
+    <!-- ============================
+         RIGHT COLUMN — Preview & Info
+         ============================ -->
+    <div class="playground-column">
+
+      <!-- Live text color preview (FR-04, FR-05, AC-03) -->
+      <section aria-labelledby="pg-preview-label">
+        <p id="pg-preview-label" class="pg-section-label">Preview</p>
+        <!--
+          pg-preview-area: background tracks <input type="color"> value (FR-10).
+          pg-preview-text: style.color tracks selected color (FR-04).
+          textContent is updated from textarea input event (FR-09, NFR-03).
+        -->
+        <div
+          id="pg-preview-area"
+          class="preview-area"
+          aria-label="Color preview area"
+          style="background-color: #FFFFFF;"
+        >
+          <div
+            id="pg-preview-text"
+            aria-live="off"
+          >The quick brown fox jumps over the lazy dog.</div>
+        </div>
+      </section>
+
+      <!-- Selected color information panel (FR-06, AC-04) -->
+      <section aria-labelledby="pg-info-label">
+        <p id="pg-info-label" class="pg-section-label">Color information</p>
+        <!--
+          All dd values are set via textContent in playground.js (NFR-03 / RISK-02).
+          Initial placeholder dashes are replaced on first color selection.
+        -->
+        <dl class="info-panel" aria-label="Selected color details">
+          <dt>Name</dt>  <dd id="pg-info-name">&#8212;</dd>
+          <dt>HEX</dt>   <dd id="pg-info-hex">&#8212;</dd>
+          <dt>RGB</dt>   <dd id="pg-info-rgb">&#8212;</dd>
+          <dt>HSL</dt>   <dd id="pg-info-hsl">&#8212;</dd>
+        </dl>
+      </section>
+
+      <!-- Contrast ratio and WCAG AA result (FR-07, FR-08, AC-05, EC-04, ASM-03) -->
+      <section aria-labelledby="pg-contrast-label">
+        <p id="pg-contrast-label" class="pg-section-label">Contrast</p>
+        <div class="contrast-section" aria-label="Contrast ratio and WCAG AA result">
+          <div class="contrast-ratio-row">
+            <span aria-label="Contrast ratio">
+              <span id="pg-contrast-ratio" aria-live="off">&#8212;</span>
+            </span>
+            <span
+              id="pg-contrast-badge"
+              class="contrast-badge"
+              role="status"
+              aria-label="WCAG AA result"
+            >
+              <span id="pg-wcag-result">&#8212;</span>
+            </span>
+          </div>
+          <p class="pg-section-label" style="text-transform: none; font-weight: normal; margin-top: 4px;">
+            WCAG AA normal text requires a contrast ratio of at least 4.5:1.
+          </p>
+        </div>
+      </section>
+
+    </div><!-- /RIGHT COLUMN -->
+
+  </main>
+
+  <!--
+    ES module: playground.js defers all DOM access to function bodies (DD-10),
+    so Node.js CI can import it without crashing.
+  -->
+  <script type="module" src="lib/playground.js"></script>
+
+</body>
+</html>

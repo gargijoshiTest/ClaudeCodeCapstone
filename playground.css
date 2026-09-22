@@ -1,0 +1,232 @@
+/* ============================================================
+   TES-3 Text Color Playground — playground-specific styles
+   References :root tokens declared in styles.css via <link>.
+   All TES-3 transitions are scoped inside
+   @media (prefers-reduced-motion: no-preference) per GAP-05.
+   ============================================================ */
+
+/* ---- Page header ---- */
+.pg-header { padding: 20px 24px 0; display: flex; align-items: baseline; gap: 16px; }
+.pg-header h1 { font-size: 1.5rem; }
+.pg-nav-link { font-size: .9rem; color: #4169E1; text-decoration: none; }
+.pg-nav-link:hover { text-decoration: underline; }
+.pg-nav-link:focus { outline: 2px solid #4169E1; outline-offset: 2px; border-radius: 2px; }
+
+/* ---- Two-column grid layout ---- */
+.playground-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  padding: 24px;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.playground-column {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ---- Section labels ---- */
+.pg-section-label {
+  font-size: .8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+}
+
+/* ---- Combobox widget ---- */
+.combobox-wrapper {
+  position: relative;
+}
+
+.combobox-wrapper input[type="text"] {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 1rem;
+  background: var(--surface);
+  color: var(--text);
+}
+.combobox-wrapper input[type="text"]:focus {
+  outline: 2px solid #4169E1;
+  outline-offset: 2px;
+}
+
+.combobox-listbox {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 240px;
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  z-index: 200;
+  list-style: none;
+  padding: 4px 0;
+  margin: 0;
+}
+.combobox-listbox[hidden] { display: none; }
+
+.combobox-option {
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: .9rem;
+  color: var(--text);
+}
+.combobox-option:hover {
+  background: var(--bg);
+}
+.combobox-option[aria-selected="true"],
+.combobox-option[data-active="true"] {
+  background: #4169E1;
+  color: #fff;
+}
+
+/* ---- Sample text textarea ---- */
+.pg-label {
+  font-size: .9rem;
+  font-weight: 600;
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+textarea.pg-textarea {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 1rem;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 72px;
+  background: var(--surface);
+  color: var(--text);
+}
+textarea.pg-textarea:focus {
+  outline: 2px solid #4169E1;
+  outline-offset: 2px;
+}
+
+/* ---- Background color picker ---- */
+.pg-bg-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+input[type="color"].pg-color-input {
+  width: 48px;
+  height: 36px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  padding: 2px;
+  background: var(--surface);
+}
+input[type="color"].pg-color-input:focus {
+  outline: 2px solid #4169E1;
+  outline-offset: 2px;
+}
+
+/* ---- Preview area ---- */
+.preview-area {
+  min-height: 140px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+}
+
+#pg-preview-text {
+  font-size: 1.1rem;
+  line-height: 1.6;
+  word-break: break-word;
+  width: 100%;
+}
+
+/* ---- Color info panel ---- */
+.info-panel {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 12px;
+  font-size: .9rem;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.info-panel dt { color: var(--text-muted); font-weight: 600; align-self: center; }
+.info-panel dd { font-family: monospace; align-self: center; }
+
+/* ---- Contrast section ---- */
+.contrast-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.contrast-ratio-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: .95rem;
+}
+#pg-contrast-ratio {
+  font-family: monospace;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+/* ---- Contrast badge ---- */
+.contrast-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: .8rem;
+  font-weight: 700;
+  border: 2px solid transparent;
+}
+.contrast-pass {
+  background: #d1fae5;
+  color: #065f46;
+  border-color: #6ee7b7;
+}
+.contrast-fail {
+  background: #fee2e2;
+  color: #991b1b;
+  border-color: #fca5a5;
+}
+
+/* ---- Copy HEX button feedback ---- */
+/* Base — no transition outside the media query below (GAP-05) */
+@media (prefers-reduced-motion: no-preference) {
+  .btn-copy-feedback {
+    transition: background-color .2s ease, color .2s ease;
+  }
+  .contrast-badge {
+    transition: background-color .15s ease, color .15s ease, border-color .15s ease;
+  }
+}
+
+/* ---- Responsive: single column on small screens (max-width 600px, same as TES-2) ---- */
+@media (max-width: 600px) {
+  .playground-layout {
+    grid-template-columns: 1fr;
+    padding: 16px;
+  }
+  .pg-header { flex-direction: column; gap: 4px; }
+}
